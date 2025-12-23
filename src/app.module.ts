@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from './database/database.module';
@@ -35,12 +34,6 @@ import { AdminModule } from './modules/admin/admin.module';
       }),
       inject: [ConfigService],
     }),
-
-    // Global Rate Limiting
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 10,
-    }]),
 
     // Database initialization
     DatabaseModule,

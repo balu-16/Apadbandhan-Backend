@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { QrCode, QrCodeDocument } from './schemas/qrcode.schema';
@@ -7,10 +7,34 @@ import * as QRCode from 'qrcode';
 
 @Injectable()
 export class QrCodesService implements OnModuleInit {
+  private readonly logger = new Logger(QrCodesService.name);
+
   constructor(
     @InjectModel(QrCode.name)
     private qrCodeModel: Model<QrCodeDocument>,
-  ) {}
+  ) { }
+
+  // ==================== CONSTANTS ====================
+  private static readonly ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+  private static readonly MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
+
+  // ==================== HELPER METHODS ====================
+
+  /**
+   * Validate QR image file upload
+   * @throws BadRequestException if file is invalid
+   */
+  private validateQrImageFile(file: Express.Multer.File): void {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    if (!QrCodesService.ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('Only PNG and JPEG images are allowed');
+    }
+    if (file.size > QrCodesService.MAX_FILE_SIZE) {
+      throw new BadRequestException('File too large. Maximum size is 16MB');
+    }
+  }
 
   /**
    * Initialize module - generate 10 random QR codes if collection is empty
@@ -18,11 +42,11 @@ export class QrCodesService implements OnModuleInit {
   async onModuleInit() {
     const count = await this.qrCodeModel.countDocuments();
     if (count === 0) {
-      console.log('📱 No QR codes found. Generating 10 random QR codes...');
+      this.logger.log('📱 No QR codes found. Generating 10 random QR codes...');
       await this.generateRandomQrCodes(10);
-      console.log('✅ 10 QR codes generated successfully!');
+      this.logger.log('✅ 10 QR codes generated successfully!');
     } else {
-      console.log(`📱 Found ${count} existing QR codes in database.`);
+      this.logger.log(`📱 Found ${count} existing QR codes in database.`);
     }
   }
 
@@ -74,7 +98,7 @@ export class QrCodesService implements OnModuleInit {
         // Generate unique device code
         let deviceCode: string;
         let exists = true;
-        
+
         while (exists) {
           deviceCode = this.generateDeviceCode();
           exists = !!(await this.qrCodeModel.findOne({ deviceCode }));
@@ -135,25 +159,11 @@ export class QrCodesService implements OnModuleInit {
    * Upload/update QR image for existing device
    */
   async uploadQrImage(
-    deviceId: string, 
+    deviceId: string,
     file: Express.Multer.File
   ): Promise<{ deviceId: string; deviceCode: string; size: number; mimeType: string; message: string }> {
     // Validate file
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Only PNG and JPEG images are allowed');
-    }
-
-    // Validate file size (16MB max)
-    const maxSize = 16 * 1024 * 1024; // 16MB
-    if (file.size > maxSize) {
-      throw new BadRequestException('File too large. Maximum size is 16MB');
-    }
+    this.validateQrImageFile(file);
 
     // Find and update device
     const qrCode = await this.qrCodeModel.findByIdAndUpdate(
@@ -187,21 +197,7 @@ export class QrCodesService implements OnModuleInit {
     file: Express.Multer.File
   ): Promise<{ deviceId: string; deviceCode: string; size: number; mimeType: string; message: string }> {
     // Validate file
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Only PNG and JPEG images are allowed');
-    }
-
-    // Validate file size (16MB max)
-    const maxSize = 16 * 1024 * 1024;
-    if (file.size > maxSize) {
-      throw new BadRequestException('File too large. Maximum size is 16MB');
-    }
+    this.validateQrImageFile(file);
 
     // Find and update device by code
     const qrCode = await this.qrCodeModel.findOneAndUpdate(
@@ -232,7 +228,7 @@ export class QrCodesService implements OnModuleInit {
    */
   async getQrImage(deviceId: string): Promise<{ buffer: Buffer; contentType: string }> {
     const qrCode = await this.qrCodeModel.findById(deviceId).select('+qrImage');
-    
+
     if (!qrCode) {
       throw new NotFoundException('Device not found');
     }
@@ -252,7 +248,7 @@ export class QrCodesService implements OnModuleInit {
    */
   async getQrImageByCode(deviceCode: string): Promise<{ buffer: Buffer; contentType: string }> {
     const qrCode = await this.qrCodeModel.findOne({ deviceCode }).select('+qrImage');
-    
+
     if (!qrCode) {
       throw new NotFoundException('Device not found');
     }
@@ -311,7 +307,7 @@ export class QrCodesService implements OnModuleInit {
    */
   async validateDeviceCode(deviceCode: string): Promise<{ valid: boolean; message: string; qrCode?: any }> {
     const qrCode = await this.qrCodeModel.findOne({ deviceCode }).select('-qrImage');
-    
+
     if (!qrCode) {
       return { valid: false, message: 'Device code not found' };
     }
@@ -324,8 +320,8 @@ export class QrCodesService implements OnModuleInit {
       return { valid: false, message: 'This device code is not available' };
     }
 
-    return { 
-      valid: true, 
+    return {
+      valid: true,
       message: 'Device code is valid and available',
       qrCode: {
         id: qrCode._id,
@@ -340,7 +336,7 @@ export class QrCodesService implements OnModuleInit {
    */
   async assignToUser(assignDto: AssignQrCodeDto): Promise<QrCodeDocument> {
     const qrCode = await this.qrCodeModel.findOneAndUpdate(
-      { 
+      {
         deviceCode: assignDto.deviceCode,
         isAssigned: false,
         status: 'available'

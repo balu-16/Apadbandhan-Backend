@@ -12,29 +12,17 @@ import {
   Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
-const multerOptions = {
-  storage: memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-  fileFilter: (req: any, file: any, callback: any) => {
-    if (file.mimetype.match(/^image\/(jpeg|jpg|png|gif|webp)$/)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Only image files are allowed'), false);
-    }
-  },
-};
+import { profilePhotoMulterConfig } from '../../shared/multer.config';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
@@ -79,7 +67,7 @@ export class UsersController {
   @Post(':id/profile-photo')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('photo', multerOptions))
+  @UseInterceptors(FileInterceptor('photo', profilePhotoMulterConfig))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload profile photo' })
   @ApiBody({

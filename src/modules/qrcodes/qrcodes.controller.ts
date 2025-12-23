@@ -9,37 +9,19 @@ import {
   UploadedFile,
   Res,
   UseGuards,
-  Query,
-  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { QrCodesService } from './qrcodes.service';
 import { CreateQrCodeDto, UploadQrImageDto, AssignQrCodeDto } from './dto/qrcode.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-
-// Multer configuration for memory storage
-const multerOptions = {
-  storage: memoryStorage(),
-  limits: {
-    fileSize: 16 * 1024 * 1024, // 16MB max
-  },
-  fileFilter: (req: any, file: any, callback: any) => {
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-    if (allowedTypes.includes(file.mimetype)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Only PNG and JPEG images are allowed'), false);
-    }
-  },
-};
+import { qrCodeMulterConfig } from '../../shared/multer.config';
 
 @ApiTags('qrcodes')
 @Controller('qrcodes')
 export class QrCodesController {
-  constructor(private readonly qrCodesService: QrCodesService) {}
+  constructor(private readonly qrCodesService: QrCodesService) { }
 
   // ==================== PUBLIC ENDPOINTS ====================
 
@@ -66,7 +48,7 @@ export class QrCodesController {
     @Res() res: Response,
   ) {
     const { buffer, contentType } = await this.qrCodesService.getQrImageByCode(code);
-    
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', buffer.length);
     res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
@@ -147,7 +129,7 @@ export class QrCodesController {
   @Post('upload-qr')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('qrImage', multerOptions))
+  @UseInterceptors(FileInterceptor('qrImage', qrCodeMulterConfig))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload QR code image for a device' })
   @ApiBody({
@@ -173,7 +155,7 @@ export class QrCodesController {
   @Post('upload-qr/:code')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('qrImage', multerOptions))
+  @UseInterceptors(FileInterceptor('qrImage', qrCodeMulterConfig))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload QR code image by device code' })
   @ApiResponse({ status: 200, description: 'Image upload successful' })
@@ -195,7 +177,7 @@ export class QrCodesController {
     @Res() res: Response,
   ) {
     const { buffer, contentType } = await this.qrCodesService.getQrImage(id);
-    
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', buffer.length);
     res.setHeader('Cache-Control', 'public, max-age=86400');

@@ -20,7 +20,23 @@ export class AdminService {
     private deviceModel: Model<DeviceDocument>,
     @InjectModel(QrCode.name)
     private qrCodeModel: Model<QrCodeDocument>,
-  ) {}
+  ) { }
+
+  // ==================== HELPER METHODS ====================
+
+  /**
+   * Check if a user with the given email or phone already exists
+   * @throws BadRequestException if user already exists
+   */
+  private async checkUserExists(email: string, phone: string): Promise<void> {
+    const existingUser = await this.userModel.findOne({
+      $or: [{ email }, { phone }],
+    }).exec();
+
+    if (existingUser) {
+      throw new BadRequestException('User with this email or phone already exists');
+    }
+  }
 
   // ==================== USER MANAGEMENT ====================
 
@@ -56,13 +72,7 @@ export class AdminService {
     }
 
     // Check if user already exists
-    const existingUser = await this.userModel.findOne({
-      $or: [{ email: createUserDto.email }, { phone: createUserDto.phone }],
-    }).exec();
-
-    if (existingUser) {
-      throw new BadRequestException('User with this email or phone already exists');
-    }
+    await this.checkUserExists(createUserDto.email, createUserDto.phone);
 
     const user = new this.userModel({
       ...createUserDto,
@@ -126,13 +136,7 @@ export class AdminService {
 
   async createAdmin(createUserDto: CreateUserDto): Promise<UserDocument> {
     // Check if user already exists
-    const existingUser = await this.userModel.findOne({
-      $or: [{ email: createUserDto.email }, { phone: createUserDto.phone }],
-    }).exec();
-
-    if (existingUser) {
-      throw new BadRequestException('User with this email or phone already exists');
-    }
+    await this.checkUserExists(createUserDto.email, createUserDto.phone);
 
     const admin = new this.userModel({
       ...createUserDto,
@@ -212,13 +216,15 @@ export class AdminService {
 
     // Fetch users in bulk
     const users = await this.userModel.find({
-      _id: { $in: assignedUserIds.map(id => {
-        try {
-          return new Types.ObjectId(id);
-        } catch {
-          return id;
-        }
-      })}
+      _id: {
+        $in: assignedUserIds.map(id => {
+          try {
+            return new Types.ObjectId(id);
+          } catch {
+            return id;
+          }
+        })
+      }
     }).exec();
 
     // Create a map for quick lookup
@@ -228,7 +234,7 @@ export class AdminService {
     return qrCodes.map(qr => {
       const qrObj = qr.toJSON();
       const assignedUser = qr.assignedToUserId ? userMap.get(qr.assignedToUserId) : null;
-      
+
       return {
         ...qrObj,
         id: qr._id,

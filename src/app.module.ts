@@ -10,8 +10,13 @@ import { QrCodesModule } from './modules/qrcodes/qrcodes.module';
 import { DeviceLocationsModule } from './modules/device-locations/device-locations.module';
 import { HealthModule } from './modules/health/health.module';
 import { AdminModule } from './modules/admin/admin.module';
-// import { MqttModule } from './mqtt/mqtt.module'; // Temporarily disabled
-// import { EventsModule } from './events/events.module'; // Temporarily disabled (depends on MQTT)
+/**
+ * MQTT and Events modules are currently disabled.
+ * To enable, uncomment the imports below and add to the imports array.
+ * Requires: MQTT_BROKER_URL, MQTT_USERNAME, MQTT_PASSWORD environment variables
+ */
+// import { MqttModule } from './mqtt/mqtt.module';
+// import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -48,4 +53,4 @@ import { AdminModule } from './modules/admin/admin.module';
     // EventsModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

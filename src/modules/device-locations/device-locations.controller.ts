@@ -7,33 +7,72 @@ import {
   Query,
   Delete,
   UseGuards,
+  Headers,
+  UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiHeader } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 import { DeviceLocationsService } from './device-locations.service';
 import { CreateDeviceLocationDto, LocationQueryDto } from './dto/device-location.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+// Maximum batch size to prevent DoS attacks
+const MAX_BATCH_SIZE = 100;
+
 @ApiTags('device-locations')
 @Controller('device-locations')
 export class DeviceLocationsController {
-  constructor(private readonly locationsService: DeviceLocationsService) {}
+  constructor(
+    private readonly locationsService: DeviceLocationsService,
+    private readonly configService: ConfigService,
+  ) { }
 
   /**
-   * Record a new location - This endpoint can be called by AIoT devices
-   * Consider making this endpoint public or using API key auth for devices
+   * Validate API key for IoT device endpoints
+   */
+  private validateApiKey(apiKey: string): void {
+    const validApiKey = this.configService.get<string>('DEVICE_API_KEY');
+    if (!validApiKey) {
+      throw new UnauthorizedException('Device API key not configured on server');
+    }
+    if (apiKey !== validApiKey) {
+      throw new UnauthorizedException('Invalid device API key');
+    }
+  }
+
+  /**
+   * Record a new location - This endpoint is protected by API key for IoT devices
    */
   @Post()
-  @ApiOperation({ summary: 'Record a new device location' })
-  create(@Body() createLocationDto: CreateDeviceLocationDto) {
+  @ApiOperation({ summary: 'Record a new device location (requires API key)' })
+  @ApiHeader({ name: 'x-device-api-key', description: 'API key for device authentication', required: true })
+  create(
+    @Headers('x-device-api-key') apiKey: string,
+    @Body() createLocationDto: CreateDeviceLocationDto,
+  ) {
+    this.validateApiKey(apiKey);
     return this.locationsService.create(createLocationDto);
   }
 
   /**
    * Record multiple locations in batch - For AIoT sensor data uploads
+   * Protected by API key and limited batch size
    */
   @Post('batch')
-  @ApiOperation({ summary: 'Record multiple device locations in batch' })
-  createBatch(@Body() locations: CreateDeviceLocationDto[]) {
+  @ApiOperation({ summary: 'Record multiple device locations in batch (requires API key)' })
+  @ApiHeader({ name: 'x-device-api-key', description: 'API key for device authentication', required: true })
+  createBatch(
+    @Headers('x-device-api-key') apiKey: string,
+    @Body() locations: CreateDeviceLocationDto[],
+  ) {
+    this.validateApiKey(apiKey);
+    if (!Array.isArray(locations) || locations.length === 0) {
+      throw new BadRequestException('Locations array is required and cannot be empty');
+    }
+    if (locations.length > MAX_BATCH_SIZE) {
+      throw new BadRequestException(`Batch size exceeds maximum limit of ${MAX_BATCH_SIZE}`);
+    }
     return this.locationsService.createBatch(locations);
   }
 

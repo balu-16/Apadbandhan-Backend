@@ -12,7 +12,7 @@ export type QrCodeDocument = QrCode & Document;
  * assigned to devices during registration. Each QR code has
  * a unique 16-digit code and stores the QR image as a Buffer.
  */
-@Schema({ 
+@Schema({
   timestamps: true,
   collection: 'qrcodes',
   toJSON: {
@@ -31,8 +31,8 @@ export class QrCode {
    * Unique 16-digit device code
    * Format: 16 numeric digits (e.g., "1234567890123456")
    */
-  @Prop({ 
-    required: true, 
+  @Prop({
+    required: true,
     unique: true,
     minlength: 16,
     maxlength: 16
@@ -42,7 +42,7 @@ export class QrCode {
   /**
    * Human-readable device name/label
    */
-  @Prop({ 
+  @Prop({
     required: true,
     trim: true,
     default: 'Apadbandhav Device'
@@ -53,7 +53,7 @@ export class QrCode {
    * QR code image stored as binary Buffer
    * Max size: 16MB (MongoDB document limit consideration)
    */
-  @Prop({ 
+  @Prop({
     type: Buffer,
     required: true
   })
@@ -63,7 +63,7 @@ export class QrCode {
    * MIME type of the stored image
    * Allowed: image/png, image/jpeg
    */
-  @Prop({ 
+  @Prop({
     required: true,
     enum: ['image/png', 'image/jpeg', 'image/jpg']
   })
@@ -96,7 +96,7 @@ export class QrCode {
   /**
    * Status of the QR code
    */
-  @Prop({ 
+  @Prop({
     default: 'available',
     enum: ['available', 'assigned', 'disabled']
   })
@@ -107,4 +107,5 @@ export const QrCodeSchema = SchemaFactory.createForClass(QrCode);
 
 // Indexes for efficient queries (deviceCode index created by unique: true)
 QrCodeSchema.index({ isAssigned: 1, status: 1 });
+QrCodeSchema.index({ assignedToUserId: 1 }); // Added for faster user lookup
 QrCodeSchema.index({ createdAt: -1 });

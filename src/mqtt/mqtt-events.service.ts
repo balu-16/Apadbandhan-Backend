@@ -23,7 +23,7 @@ import { LocationSource } from '../modules/device-locations/dto/device-location.
 @Injectable()
 export class MqttEventsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttEventsService.name);
-  
+
   // Track subscriptions for cleanup
   private subscriptions: Subscription[] = [];
 
@@ -39,7 +39,7 @@ export class MqttEventsService implements OnModuleInit, OnModuleDestroy {
     private devicesService: DevicesService,
     @Inject(forwardRef(() => DeviceLocationsService))
     private deviceLocationsService: DeviceLocationsService,
-  ) {}
+  ) { }
 
   /**
    * Subscribe to MQTT events on module initialization
@@ -111,7 +111,7 @@ export class MqttEventsService implements OnModuleInit, OnModuleDestroy {
    */
   private async processMessage(message: MqttMessage): Promise<void> {
     this.logger.debug(`Processing message from device: ${message.deviceId}`);
-    
+
     // Store event in database
     await this.storeEvent({
       deviceId: message.deviceId,
@@ -196,7 +196,7 @@ export class MqttEventsService implements OnModuleInit, OnModuleDestroy {
    */
   private calculateSeverity(impact: number, speed: number): 'low' | 'medium' | 'high' | 'critical' {
     const severityScore = (impact * 0.6) + (speed / 100 * 0.4);
-    
+
     if (severityScore >= 8) return 'critical';
     if (severityScore >= 5) return 'high';
     if (severityScore >= 3) return 'medium';
@@ -249,7 +249,7 @@ export class MqttEventsService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`✅ Alert created and broadcasted: ${alert._id}`);
     } catch (error) {
       this.logger.error(`❌ Failed to create alert: ${error.message}`);
-      
+
       // Still broadcast to WebSocket even if DB save fails
       this.eventsGateway.broadcastAlertCreated({
         deviceId: accident.deviceId,
@@ -285,6 +285,8 @@ export class MqttEventsService implements OnModuleInit, OnModuleDestroy {
           latitude: telemetry.location.lat,
           longitude: telemetry.location.lng,
         });
+      } else {
+        this.logger.warn(`⚠️ Device not found for code: ${telemetry.deviceId} - location stored but device not updated`);
       }
 
       // 3. Broadcast device status update

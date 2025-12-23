@@ -25,23 +25,22 @@ import { WS_EVENTS } from '../mqtt/mqtt.constants';
  */
 @WebSocketGateway({
   cors: {
-    origin: '*', // Configure based on your frontend URL in production
+    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8080'],
     methods: ['GET', 'POST'],
     credentials: true,
   },
   namespace: '/events',
   transports: ['websocket', 'polling'],
 })
-export class EventsGateway 
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit 
-{
+export class EventsGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   private readonly logger = new Logger(EventsGateway.name);
   private connectedClients = new Map<string, Socket>();
 
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly mqttService: MqttService) {}
+  constructor(private readonly mqttService: MqttService) { }
 
   /**
    * Subscribe to MQTT events and forward to WebSocket clients
@@ -81,7 +80,7 @@ export class EventsGateway
   handleConnection(client: Socket) {
     const clientId = client.id;
     this.connectedClients.set(clientId, client);
-    
+
     this.logger.log(`👤 Client connected: ${clientId}`);
     this.logger.log(`   Total clients: ${this.connectedClients.size}`);
 
@@ -100,7 +99,7 @@ export class EventsGateway
   handleDisconnect(client: Socket) {
     const clientId = client.id;
     this.connectedClients.delete(clientId);
-    
+
     this.logger.log(`👤 Client disconnected: ${clientId}`);
     this.logger.log(`   Total clients: ${this.connectedClients.size}`);
   }
@@ -121,7 +120,7 @@ export class EventsGateway
    */
   private broadcastAccidentAlert(accident: AccidentEventPayload) {
     this.logger.warn(`🚨 Broadcasting accident alert for device: ${accident.deviceId}`);
-    
+
     this.server.emit(WS_EVENTS.DEVICE_ACCIDENT, {
       type: 'accident',
       priority: 'critical',
@@ -183,9 +182,9 @@ export class EventsGateway
   ) {
     const room = `device:${data.deviceId}`;
     client.join(room);
-    
+
     this.logger.log(`📥 Client ${client.id} subscribed to device: ${data.deviceId}`);
-    
+
     return {
       event: 'subscribed',
       data: { deviceId: data.deviceId, room },
@@ -202,9 +201,9 @@ export class EventsGateway
   ) {
     const room = `device:${data.deviceId}`;
     client.leave(room);
-    
+
     this.logger.log(`📤 Client ${client.id} unsubscribed from device: ${data.deviceId}`);
-    
+
     return {
       event: 'unsubscribed',
       data: { deviceId: data.deviceId },

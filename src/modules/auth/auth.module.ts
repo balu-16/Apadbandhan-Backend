@@ -18,12 +18,18 @@ import { Otp, OtpSchema } from './schemas/otp.schema';
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET', 'default-secret-key'),
-        signOptions: {
-          expiresIn: configService.get('JWT_EXPIRATION', '7d'),
-        },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET environment variable is not configured. This is required for security.');
+        }
+        return {
+          secret: jwtSecret,
+          signOptions: {
+            expiresIn: configService.get('JWT_EXPIRATION', '7d'),
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],
@@ -31,4 +37,4 @@ import { Otp, OtpSchema } from './schemas/otp.schema';
   providers: [AuthService, JwtStrategy, OtpService, RolesGuard],
   exports: [AuthService, JwtModule, OtpService, RolesGuard],
 })
-export class AuthModule {}
+export class AuthModule { }

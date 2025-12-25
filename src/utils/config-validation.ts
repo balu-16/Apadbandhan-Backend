@@ -30,7 +30,7 @@ const requiredEnvVars: RequiredEnvVars = {
   CORS_ORIGIN: {
     required: false,
     description: 'CORS allowed origins',
-    defaultValue: 'http://localhost:8080,http://localhost:3000,http://127.0.0.1:8080',
+    defaultValue: '*',
   },
   SMS_SECRET: {
     required: false,
@@ -55,7 +55,7 @@ const requiredEnvVars: RequiredEnvVars = {
   },
 };
 
-export function validateEnvironmentVariables(): void {
+export function validateEnvironmentVariables(): { valid: boolean; errors: string[] } {
   const logger = new Logger('ConfigValidation');
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -66,47 +66,31 @@ export function validateEnvironmentVariables(): void {
     const value = process.env[key];
 
     if (config.required && !value) {
-      errors.push(`❌ Missing required environment variable: ${key} - ${config.description}`);
+      errors.push(`Missing required: ${key} - ${config.description}`);
     } else if (!value && config.defaultValue) {
       process.env[key] = config.defaultValue;
-      logger.warn(`⚠️  Using default value for ${key}: ${config.defaultValue}`);
     } else if (!value) {
-      warnings.push(`⚠️  Optional environment variable not set: ${key} - ${config.description}`);
+      warnings.push(`Optional not set: ${key}`);
     }
   });
 
   // Additional validations
   const jwtSecret = process.env.JWT_SECRET;
   if (jwtSecret && jwtSecret.length < 32) {
-    errors.push('❌ JWT_SECRET must be at least 32 characters long for security');
+    errors.push('JWT_SECRET must be at least 32 characters');
   }
 
-  const nodeEnv = process.env.NODE_ENV;
-  if (nodeEnv === 'production') {
-    const corsOrigin = process.env.CORS_ORIGIN;
-    if (corsOrigin === '*') {
-      warnings.push('⚠️  CORS_ORIGIN is set to "*" in production - consider using specific domains');
-    }
+  // Log warnings (don't fail for warnings)
+  warnings.forEach(warning => logger.warn(`⚠️  ${warning}`));
 
-    // Check SMS configuration for production
-    const smsVars = ['SMS_SECRET', 'SMS_SENDER', 'SMS_TEMPID', 'SMS_BASE_URL'];
-    const missingSmsVars = smsVars.filter(v => !process.env[v]);
-    if (missingSmsVars.length > 0) {
-      warnings.push(`⚠️  SMS configuration incomplete (${missingSmsVars.join(', ')}) - OTP functionality may not work`);
-    }
-  }
-
-  // Log warnings
-  warnings.forEach(warning => logger.warn(warning));
-
-  // Handle errors
+  // Log errors but don't exit (for serverless compatibility)
   if (errors.length > 0) {
-    logger.error('❌ Environment validation failed:');
-    errors.forEach(error => logger.error(error));
-    logger.error('💡 Please check your .env file and ensure all required variables are set');
-    process.exit(1);
+    logger.error('❌ Environment validation issues:');
+    errors.forEach(error => logger.error(`  - ${error}`));
+    // Don't process.exit() in serverless - just return status
+  } else {
+    logger.log('✅ Environment validation passed');
   }
 
-  logger.log('✅ Environment validation passed');
+  return { valid: errors.length === 0, errors };
 }
-

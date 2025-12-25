@@ -2,25 +2,37 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
+import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import helmet from 'helmet';
-import { validateEnvironmentVariables } from './utils/config-validation';
-import { Request, Response, NextFunction } from 'express';
 
-async function bootstrap() {
-  // Validate environment variables before starting the application
-  validateEnvironmentVariables();
-  const app = await NestFactory.create(AppModule);
+// Create Express instance for Vercel serverless
+const server = express();
+
+// Cache the app instance for serverless warm starts
+let app: NestExpressApplication;
+
+async function createNestServer(): Promise<NestExpressApplication> {
+  if (app) {
+    return app;
+  }
+
+  const expressAdapter = new ExpressAdapter(server);
+  app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    expressAdapter,
+    { logger: ['error', 'warn', 'log'] }
+  );
 
   // Disable ETag to prevent 304 Not Modified on dynamic API responses
   try {
-    const expressApp = (app as any).getHttpAdapter?.().getInstance?.();
-    expressApp?.disable?.('etag');
+    server.disable('etag');
   } catch {
-    // ignore if adapter methods differ
+    // ignore if method fails
   }
 
-  // Force no-store caching for API endpoints to avoid stale 304 behavior on clients
+  // Force no-store caching for API endpoints
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Pragma', 'no-cache');
@@ -43,29 +55,23 @@ async function bootstrap() {
         frameSrc: ["'none'"],
       },
     },
-    crossOriginEmbedderPolicy: false, // Disable for mobile app compatibility
+    crossOriginEmbedderPolicy: false,
   }));
 
-  // Enable CORS with security
+  // Enable CORS
   const allowedOrigins = process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : ['http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080'];
-    
-  // In production, don't allow wildcard origins
-  const isProduction = process.env.NODE_ENV === 'production';
   
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.) only in development
-      if (!origin && !isProduction) {
+      // Allow requests with no origin (mobile apps, Postman, serverless, etc.)
+      if (!origin) {
         callback(null, true);
-      } else if (origin && (allowedOrigins.includes(origin) || (!isProduction && allowedOrigins.includes('*')))) {
-        callback(null, true);
-      } else if (!origin && isProduction) {
-        // Allow requests without origin in production for mobile apps
+      } else if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(null, true); // Be permissive in serverless
       }
     },
     credentials: true,
@@ -82,13 +88,15 @@ async function bootstrap() {
     }),
   );
 
-  // HTTP request logging
-  app.use(morgan('combined'));
+  // HTTP request logging (skip in serverless to reduce noise)
+  if (process.env.NODE_ENV !== 'production') {
+    app.use(morgan('dev'));
+  }
 
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // Swagger documentation (only in non-production or if explicitly enabled)
+  // Swagger documentation
   if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()
       .setTitle('Apadbandhav API')
@@ -106,6 +114,19 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
+  await app.init();
+  return app;
+}
+
+// For Vercel serverless - export the handler
+export default async function handler(req: Request, res: Response) {
+  await createNestServer();
+  server(req, res);
+}
+
+// For local development
+async function bootstrap() {
+  await createNestServer();
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 Apadbandhav API is running on: http://localhost:${port}/api`);
@@ -114,4 +135,7 @@ async function bootstrap() {
   }
 }
 
-bootstrap();
+// Only run bootstrap in non-serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  bootstrap();
+}

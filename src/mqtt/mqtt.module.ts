@@ -1,3 +1,11 @@
+/**
+ * MQTT Module - TEMPORARILY DISABLED
+ * 
+ * This module is commented out because MQTT connection is currently disabled.
+ * Uncomment this when re-enabling MQTT functionality.
+ */
+
+/*
 import { Module, Global, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -14,7 +22,7 @@ import { DeviceLocationsModule } from '../modules/device-locations/device-locati
  * 
  * Global module that provides MQTT connectivity for IoT devices.
  * Exports MqttService for use across the application.
- */
+ *\/
 @Global()
 @Module({
   imports: [
@@ -31,3 +39,4 @@ import { DeviceLocationsModule } from '../modules/device-locations/device-locati
   exports: [MqttService, MqttEventsService],
 })
 export class MqttModule {}
+*/

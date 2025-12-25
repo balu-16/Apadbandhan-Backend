@@ -1,3 +1,14 @@
+/**
+ * WebSocket Gateway - TEMPORARILY DISABLED
+ * 
+ * This file has been commented out because MQTT connection is currently disabled.
+ * To re-enable:
+ * 1. Uncomment all code in this file
+ * 2. Uncomment MqttModule and EventsModule imports in app.module.ts
+ * 3. Ensure MQTT environment variables are configured
+ */
+
+/*
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -22,7 +33,7 @@ import { WS_EVENTS } from '../mqtt/mqtt.constants';
  * - Real-time accident alerts
  * - Device telemetry updates
  * - Device status changes
- */
+ *\/
 @WebSocketGateway({
   cors: {
     origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8080'],
@@ -44,7 +55,7 @@ export class EventsGateway
 
   /**
    * Subscribe to MQTT events and forward to WebSocket clients
-   */
+   *\/
   onModuleInit() {
     this.logger.log('🔌 Initializing WebSocket-MQTT bridge...');
 
@@ -68,7 +79,7 @@ export class EventsGateway
 
   /**
    * Gateway initialization
-   */
+   *\/
   afterInit(server: Server) {
     this.logger.log('🌐 WebSocket Gateway initialized');
     this.logger.log(`   Namespace: /events`);
@@ -76,7 +87,7 @@ export class EventsGateway
 
   /**
    * Handle new client connection
-   */
+   *\/
   handleConnection(client: Socket) {
     const clientId = client.id;
     this.connectedClients.set(clientId, client);
@@ -95,7 +106,7 @@ export class EventsGateway
 
   /**
    * Handle client disconnection
-   */
+   *\/
   handleDisconnect(client: Socket) {
     const clientId = client.id;
     this.connectedClients.delete(clientId);
@@ -106,7 +117,7 @@ export class EventsGateway
 
   /**
    * Broadcast device event to all connected clients
-   */
+   *\/
   private broadcastDeviceEvent(message: MqttMessage) {
     this.server.emit(WS_EVENTS.DEVICE_EVENT, {
       ...message,
@@ -117,7 +128,7 @@ export class EventsGateway
   /**
    * Broadcast accident alert to all connected clients
    * This is a high-priority event that should trigger immediate UI updates
-   */
+   *\/
   private broadcastAccidentAlert(accident: AccidentEventPayload) {
     this.logger.warn(`🚨 Broadcasting accident alert for device: ${accident.deviceId}`);
 
@@ -131,7 +142,7 @@ export class EventsGateway
 
   /**
    * Broadcast telemetry data to all connected clients
-   */
+   *\/
   private broadcastTelemetry(telemetry: DeviceTelemetryPayload) {
     this.server.emit(WS_EVENTS.DEVICE_TELEMETRY, {
       type: 'telemetry',
@@ -142,7 +153,7 @@ export class EventsGateway
 
   /**
    * Broadcast device status change
-   */
+   *\/
   broadcastDeviceStatus(deviceId: string, status: 'online' | 'offline') {
     this.server.emit(WS_EVENTS.DEVICE_STATUS, {
       deviceId,
@@ -153,7 +164,7 @@ export class EventsGateway
 
   /**
    * Broadcast new alert created
-   */
+   *\/
   broadcastAlertCreated(alert: any) {
     this.server.emit(WS_EVENTS.ALERT_CREATED, {
       type: 'alert_created',
@@ -164,7 +175,7 @@ export class EventsGateway
 
   /**
    * Send message to specific client
-   */
+   *\/
   sendToClient(clientId: string, event: string, data: any) {
     const client = this.connectedClients.get(clientId);
     if (client) {
@@ -174,7 +185,7 @@ export class EventsGateway
 
   /**
    * Handle client subscribing to specific device updates
-   */
+   *\/
   @SubscribeMessage('subscribe_device')
   handleSubscribeDevice(
     @ConnectedSocket() client: Socket,
@@ -193,7 +204,7 @@ export class EventsGateway
 
   /**
    * Handle client unsubscribing from device updates
-   */
+   *\/
   @SubscribeMessage('unsubscribe_device')
   handleUnsubscribeDevice(
     @ConnectedSocket() client: Socket,
@@ -212,7 +223,7 @@ export class EventsGateway
 
   /**
    * Handle ping from client (keep-alive)
-   */
+   *\/
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: Socket) {
     return {
@@ -223,7 +234,7 @@ export class EventsGateway
 
   /**
    * Get gateway statistics
-   */
+   *\/
   getStats() {
     return {
       connectedClients: this.connectedClients.size,
@@ -231,3 +242,4 @@ export class EventsGateway
     };
   }
 }
+*/

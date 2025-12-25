@@ -1,13 +1,27 @@
+/**
+ * MQTT Service - TEMPORARILY DISABLED
+ * 
+ * This service is not currently in use because MQTT connection is disabled.
+ * The module is not imported in app.module.ts
+ * To re-enable, uncomment MqttModule in app.module.ts and configure environment variables.
+ */
+
+/*
+============================================================================================
+ALL CODE BELOW IS TEMPORARILY DISABLED - UNCOMMENT WHEN RE-ENABLING MQTT
+============================================================================================
+*/
+
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as mqtt from 'mqtt';
 import { Subject, Observable, Subscription } from 'rxjs';
-import { 
-  MQTT_TOPICS, 
-  DEFAULT_SUBSCRIPTIONS, 
+import {
+  MQTT_TOPICS,
+  DEFAULT_SUBSCRIPTIONS,
   MQTT_RECONNECT_SETTINGS,
   MqttQoS,
-  MqttEventType 
+  MqttEventType
 } from './mqtt.constants';
 
 /**
@@ -73,23 +87,23 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   private isConnecting = false;
   private reconnectAttempts = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
-  
+
   // RxJS Subject for message streaming
   private messageSubject = new Subject<MqttMessage>();
   private accidentSubject = new Subject<AccidentEventPayload>();
   private telemetrySubject = new Subject<DeviceTelemetryPayload>();
   private errorSubject = new Subject<{ topic: string; error: Error; rawPayload: string }>();
-  
+
   // Subscription tracking for cleanup
   private subscriptions: Subscription[] = [];
-  
+
   // Mutex for connection state
   private connectionMutex = false;
-  
+
   // Last ping time for monitoring
   private lastPingTime: Date | null = null;
-  
-  constructor(private configService: ConfigService) {}
+
+  constructor(private configService: ConfigService) { }
 
   /**
    * Initialize MQTT connection on module startup
@@ -104,17 +118,17 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
    */
   async onModuleDestroy() {
     this.logger.log('🔌 Shutting down MQTT Service...');
-    
+
     // Unsubscribe all RxJS subscriptions to prevent memory leaks
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.subscriptions = [];
-    
+
     // Complete all subjects
     this.messageSubject.complete();
     this.accidentSubject.complete();
     this.telemetrySubject.complete();
     this.errorSubject.complete();
-    
+
     await this.disconnect();
   }
 
@@ -178,7 +192,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       this.logger.debug('Connection mutex locked, skipping');
       return;
     }
-    
+
     // Prevent multiple simultaneous connections
     if (this.isConnecting || this.isConnected) {
       this.logger.debug('Connection already in progress or established');
@@ -212,7 +226,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       }
 
       const uniqueClientId = `${clientId}-${Date.now()}`;
-      
+
       this.logger.log(`📡 Connecting to MQTT Broker...`);
       this.logger.log(`   URL: ${brokerUrl}`);
       this.logger.log(`   Client ID: ${uniqueClientId}`);
@@ -275,7 +289,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`❌ MQTT Error: ${error.message}`);
       this.logger.error(`   Error Code: ${error.code || 'N/A'}`);
       this.logger.error(`   Error Stack: ${error.stack?.split('\n')[1] || 'N/A'}`);
-      
+
       // Schedule reconnect only if not already scheduled
       if (!this.reconnectTimer && !this.isConnected) {
         this.scheduleReconnect();
@@ -340,7 +354,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     try {
       const payloadStr = payload.toString();
       const data = JSON.parse(payloadStr);
-      
+
       // Extract device ID from topic (devices/{deviceId}/...)
       const topicParts = topic.split('/');
       const deviceId = topicParts[1] || data.deviceId;
@@ -375,7 +389,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`❌ Failed to parse MQTT message: ${error.message}`);
       this.logger.error(`   Topic: ${topic}`);
       this.logger.error(`   Payload: ${rawPayload}`);
-      
+
       // Emit to error stream for monitoring
       this.errorSubject.next({
         topic,
@@ -414,20 +428,20 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
     // Calculate delay with exponential backoff
     let delay = Math.min(
-      MQTT_RECONNECT_SETTINGS.INITIAL_DELAY * 
-        Math.pow(MQTT_RECONNECT_SETTINGS.MULTIPLIER, this.reconnectAttempts),
+      MQTT_RECONNECT_SETTINGS.INITIAL_DELAY *
+      Math.pow(MQTT_RECONNECT_SETTINGS.MULTIPLIER, this.reconnectAttempts),
       MQTT_RECONNECT_SETTINGS.MAX_DELAY
     );
-    
+
     // Add jitter to prevent thundering herd
     const jitter = MQTT_RECONNECT_SETTINGS.JITTER || 0.1;
     const jitterAmount = delay * jitter * (Math.random() * 2 - 1); // +/- jitter%
     delay = Math.round(delay + jitterAmount);
-    
+
     this.reconnectAttempts++;
     const attemptsDisplay = maxAttempts === -1 ? '∞' : maxAttempts;
     this.logger.log(`⏰ Scheduling reconnect in ${delay}ms... (Attempt ${this.reconnectAttempts}/${attemptsDisplay})`);
-    
+
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       if (!this.isConnected && !this.isConnecting) {
@@ -449,7 +463,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     }
 
     const payload = typeof message === 'string' ? message : JSON.stringify(message);
-    
+
     this.client.publish(topic, payload, { qos }, (error) => {
       if (error) {
         this.logger.error(`❌ Failed to publish to ${topic}: ${error.message}`);
@@ -515,7 +529,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   private async disconnect(): Promise<void> {
     this.clearReconnectTimer();
     this.isConnecting = false;
-    
+
     if (this.client) {
       return new Promise((resolve) => {
         this.client!.removeAllListeners();
@@ -541,14 +555,14 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     lastPingAgeMs: number | null;
     healthy: boolean;
   } {
-    const lastPingAgeMs = this.lastPingTime 
-      ? Date.now() - this.lastPingTime.getTime() 
+    const lastPingAgeMs = this.lastPingTime
+      ? Date.now() - this.lastPingTime.getTime()
       : null;
-    
+
     // Consider unhealthy if no ping received in last 2 minutes (2x keepalive)
-    const healthy = this.isConnected && 
+    const healthy = this.isConnected &&
       (lastPingAgeMs === null || lastPingAgeMs < 120000);
-    
+
     return {
       connected: this.isConnected,
       connecting: this.isConnecting,

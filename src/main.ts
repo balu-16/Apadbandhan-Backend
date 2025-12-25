@@ -7,8 +7,16 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS
+  const allowedOrigins = [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080',
+    'https://apadbandhav-frontend.vercel.app',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: ['http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,

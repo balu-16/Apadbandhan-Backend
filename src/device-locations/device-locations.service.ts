@@ -1,15 +1,52 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { DeviceLocation, DeviceLocationDocument } from './schemas/device-location.schema';
 import { CreateDeviceLocationDto, LocationQueryDto } from './dto/device-location.dto';
+import { Device, DeviceDocument } from '../devices/schemas/device.schema';
 
 @Injectable()
 export class DeviceLocationsService {
   constructor(
     @InjectModel(DeviceLocation.name)
     private locationModel: Model<DeviceLocationDocument>,
+    @InjectModel(Device.name)
+    private deviceModel: Model<DeviceDocument>,
   ) {}
+
+  /**
+   * Find device ID by device code
+   */
+  async findDeviceIdByCode(deviceCode: string): Promise<string> {
+    const device = await this.deviceModel.findOne({ code: deviceCode }).exec();
+    if (!device) {
+      throw new NotFoundException(`Device with code ${deviceCode} not found`);
+    }
+    return device._id.toString();
+  }
+
+  /**
+   * Record a new location using device code (for IoT devices)
+   */
+  async createByDeviceCode(
+    deviceCode: string,
+    locationData: Omit<CreateDeviceLocationDto, 'deviceId'>,
+  ): Promise<DeviceLocationDocument> {
+    const deviceId = await this.findDeviceIdByCode(deviceCode);
+    return this.create({ ...locationData, deviceId });
+  }
+
+  /**
+   * Record multiple locations using device code (batch)
+   */
+  async createBatchByDeviceCode(
+    deviceCode: string,
+    locations: Omit<CreateDeviceLocationDto, 'deviceId'>[],
+  ): Promise<DeviceLocationDocument[]> {
+    const deviceId = await this.findDeviceIdByCode(deviceCode);
+    const locationsWithDeviceId = locations.map(loc => ({ ...loc, deviceId }));
+    return this.createBatch(locationsWithDeviceId);
+  }
 
   /**
    * Record a new location for a device
@@ -48,7 +85,12 @@ export class DeviceLocationsService {
     deviceId: string,
     query?: LocationQueryDto,
   ): Promise<DeviceLocationDocument[]> {
-    const filter: any = { deviceId: new Types.ObjectId(deviceId) };
+    console.log('[DeviceLocations] findByDevice called with deviceId:', deviceId);
+    
+    const objectId = new Types.ObjectId(deviceId);
+    console.log('[DeviceLocations] Converted to ObjectId:', objectId.toString());
+    
+    const filter: any = { deviceId: objectId };
 
     if (query?.startDate || query?.endDate) {
       filter.recordedAt = {};
@@ -60,15 +102,23 @@ export class DeviceLocationsService {
       }
     }
 
-    const limit = query?.limit || 100;
-    const skip = query?.skip || 0;
+    // Handle both string and number types for limit/skip (query params come as strings)
+    const limit = query?.limit ? Number(query.limit) : 100;
+    const skip = query?.skip ? Number(query.skip) : 0;
 
-    return this.locationModel
+    console.log('[DeviceLocations] Query filter:', JSON.stringify(filter));
+    console.log('[DeviceLocations] Limit:', limit, 'Skip:', skip);
+
+    const results = await this.locationModel
       .find(filter)
       .sort({ recordedAt: -1 })
       .skip(skip)
       .limit(limit)
       .exec();
+
+    console.log('[DeviceLocations] Found', results.length, 'locations');
+    
+    return results;
   }
 
   /**

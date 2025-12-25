@@ -36,8 +36,10 @@ export class AuthController {
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify OTP and login' })
   // TODO: Add @Throttle(5, 60) after installing @nestjs/throttler
-  verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
-    return this.authService.verifyOtp(verifyOtpDto);
+  verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @Request() req) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.verifyOtp(verifyOtpDto, ipAddress, userAgent);
   }
 
   @Post('signup')

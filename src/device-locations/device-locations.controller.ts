@@ -56,6 +56,43 @@ export class DeviceLocationsController {
   }
 
   /**
+   * Record a new location using device code (16-digit code)
+   * This is the preferred endpoint for IoT devices that only know their device code
+   */
+  @Post('by-code/:deviceCode')
+  @ApiOperation({ summary: 'Record a new location using device code (requires API key)' })
+  @ApiHeader({ name: 'x-device-api-key', description: 'API key for device authentication', required: true })
+  createByDeviceCode(
+    @Headers('x-device-api-key') apiKey: string,
+    @Param('deviceCode') deviceCode: string,
+    @Body() locationData: Omit<CreateDeviceLocationDto, 'deviceId'>,
+  ) {
+    this.validateApiKey(apiKey);
+    return this.locationsService.createByDeviceCode(deviceCode, locationData);
+  }
+
+  /**
+   * Record multiple locations in batch using device code
+   */
+  @Post('by-code/:deviceCode/batch')
+  @ApiOperation({ summary: 'Record multiple locations using device code (requires API key)' })
+  @ApiHeader({ name: 'x-device-api-key', description: 'API key for device authentication', required: true })
+  createBatchByDeviceCode(
+    @Headers('x-device-api-key') apiKey: string,
+    @Param('deviceCode') deviceCode: string,
+    @Body() locations: Omit<CreateDeviceLocationDto, 'deviceId'>[],
+  ) {
+    this.validateApiKey(apiKey);
+    if (!Array.isArray(locations) || locations.length === 0) {
+      throw new BadRequestException('Locations array is required and cannot be empty');
+    }
+    if (locations.length > MAX_BATCH_SIZE) {
+      throw new BadRequestException(`Batch size exceeds maximum limit of ${MAX_BATCH_SIZE}`);
+    }
+    return this.locationsService.createBatchByDeviceCode(deviceCode, locations);
+  }
+
+  /**
    * Record multiple locations in batch - For AIoT sensor data uploads
    * Protected by API key and limited batch size
    */
@@ -77,6 +114,30 @@ export class DeviceLocationsController {
   }
 
   /**
+   * Debug endpoint - Get total count of all locations (no auth required)
+   */
+  @Get('debug/count')
+  @ApiOperation({ summary: 'Debug: Get total location count' })
+  async debugCount() {
+    const allLocations = await this.locationsService['locationModel'].find({}).exec();
+    const grouped: Record<string, number> = {};
+    allLocations.forEach((loc: any) => {
+      const key = loc.deviceId?.toString() || 'unknown';
+      grouped[key] = (grouped[key] || 0) + 1;
+    });
+    return {
+      total: allLocations.length,
+      byDevice: grouped,
+      sample: allLocations[0] ? {
+        deviceId: allLocations[0].deviceId?.toString(),
+        city: allLocations[0].city,
+        lat: allLocations[0].latitude,
+        lng: allLocations[0].longitude,
+      } : null,
+    };
+  }
+
+  /**
    * Get all locations for a device
    */
   @Get('device/:deviceId')
@@ -91,6 +152,9 @@ export class DeviceLocationsController {
     @Param('deviceId') deviceId: string,
     @Query() query: LocationQueryDto,
   ) {
+    console.log('[DeviceLocationsController] GET /device/:deviceId called');
+    console.log('[DeviceLocationsController] deviceId:', deviceId);
+    console.log('[DeviceLocationsController] query:', query);
     return this.locationsService.findByDevice(deviceId, query);
   }
 

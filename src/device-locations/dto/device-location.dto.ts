@@ -95,13 +95,11 @@ export class LocationQueryDto {
 
   @ApiPropertyOptional({ example: 100 })
   @IsOptional()
-  @IsNumber()
-  limit?: number;
+  limit?: string | number;
 
   @ApiPropertyOptional({ example: 0 })
   @IsOptional()
-  @IsNumber()
-  skip?: number;
+  skip?: string | number;
 }
 
 export class DeviceLocationResponseDto {

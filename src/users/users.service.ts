@@ -53,6 +53,15 @@ export class UsersService {
     }
   }
 
+  // ==================== LOGIN TRACKING ====================
+
+  async updateLastLogin(id: string, ipAddress?: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(id, {
+      lastLoginAt: new Date(),
+      lastLoginIp: ipAddress || null,
+    }).exec();
+  }
+
   // ==================== PROFILE PHOTO ====================
 
   async uploadProfilePhoto(id: string, file: Express.Multer.File): Promise<{ message: string; profilePhotoUrl: string }> {

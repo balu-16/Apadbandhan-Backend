@@ -129,8 +129,8 @@ export class OtpService {
     try {
       this.logger.log(`📱 Sending OTP SMS to ${phoneNumber}`);
 
-      // Format the SMS message
-      const message = `Welcome to Apadbandhav. Your OTP for authentication is ${otp}. Don't share with anybody. Thank you.`;
+      // Format the SMS message - MUST match the registered DLT template exactly
+      const message = `Welcome to NighaTech Global Your OTP for authentication is ${otp} don't share with anybody Thank you`;
 
       // Prepare SMS API parameters
       const params = new URLSearchParams({

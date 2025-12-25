@@ -148,4 +148,43 @@ export class AdminController {
   getStats(@Request() req) {
     return this.adminService.getStats(req.user.role);
   }
+
+  // ==================== LOGIN LOGS ====================
+
+  @Get('users/:id/login-logs')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get login logs for a specific user (Admin/SuperAdmin only)' })
+  getUserLoginLogs(@Param('id') id: string, @Query('limit') limit?: number) {
+    return this.adminService.getUserLoginLogs(id, limit || 10);
+  }
+
+  @Get('admins/:id/login-logs')
+  @Roles('superadmin')
+  @ApiOperation({ summary: 'Get login logs for a specific admin (SuperAdmin only)' })
+  getAdminLoginLogs(@Param('id') id: string, @Query('limit') limit?: number) {
+    return this.adminService.getAdminLoginLogs(id, limit || 10);
+  }
+
+  @Get('login-logs/users')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get all user login logs (Admin/SuperAdmin only)' })
+  getAllUserLoginLogs(@Query('limit') limit?: number) {
+    return this.adminService.getAllUserLoginLogs(limit || 50);
+  }
+
+  @Get('login-logs/admins')
+  @Roles('superadmin')
+  @ApiOperation({ summary: 'Get all admin login logs (SuperAdmin only)' })
+  getAllAdminLoginLogs(@Query('limit') limit?: number) {
+    return this.adminService.getAllAdminLoginLogs(limit || 50);
+  }
+
+  // ==================== QR CODE LOOKUP ====================
+
+  @Get('qrcode/:deviceCode')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get QR code info by device code (Admin/SuperAdmin only)' })
+  getQrCodeByDeviceCode(@Param('deviceCode') deviceCode: string) {
+    return this.adminService.getQrCodeByDeviceCode(deviceCode);
+  }
 }

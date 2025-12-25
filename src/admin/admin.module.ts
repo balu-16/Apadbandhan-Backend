@@ -5,6 +5,14 @@ import { AdminService } from './admin.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { Device, DeviceSchema } from '../devices/schemas/device.schema';
 import { QrCode, QrCodeSchema } from '../qrcodes/schemas/qrcode.schema';
+import {
+  UserLoginLog,
+  UserLoginLogSchema,
+  AdminLoginLog,
+  AdminLoginLogSchema,
+  SuperadminLoginLog,
+  SuperadminLoginLogSchema,
+} from '../auth/schemas/login-log.schema';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { QrCodesModule } from '../qrcodes/qrcodes.module';
@@ -15,6 +23,9 @@ import { QrCodesModule } from '../qrcodes/qrcodes.module';
       { name: User.name, schema: UserSchema },
       { name: Device.name, schema: DeviceSchema },
       { name: QrCode.name, schema: QrCodeSchema },
+      { name: UserLoginLog.name, schema: UserLoginLogSchema },
+      { name: AdminLoginLog.name, schema: AdminLoginLogSchema },
+      { name: SuperadminLoginLog.name, schema: SuperadminLoginLogSchema },
     ]),
     UsersModule,
     forwardRef(() => AuthModule),

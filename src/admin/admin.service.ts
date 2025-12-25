@@ -9,6 +9,14 @@ import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Device, DeviceDocument } from '../devices/schemas/device.schema';
 import { QrCode, QrCodeDocument } from '../qrcodes/schemas/qrcode.schema';
+import {
+  UserLoginLog,
+  UserLoginLogDocument,
+  AdminLoginLog,
+  AdminLoginLogDocument,
+  SuperadminLoginLog,
+  SuperadminLoginLogDocument,
+} from '../auth/schemas/login-log.schema';
 import { CreateUserDto, UpdateUserDto, UserRole } from '../users/dto/create-user.dto';
 
 @Injectable()
@@ -20,6 +28,12 @@ export class AdminService {
     private deviceModel: Model<DeviceDocument>,
     @InjectModel(QrCode.name)
     private qrCodeModel: Model<QrCodeDocument>,
+    @InjectModel(UserLoginLog.name)
+    private userLoginLogModel: Model<UserLoginLogDocument>,
+    @InjectModel(AdminLoginLog.name)
+    private adminLoginLogModel: Model<AdminLoginLogDocument>,
+    @InjectModel(SuperadminLoginLog.name)
+    private superadminLoginLogModel: Model<SuperadminLoginLogDocument>,
   ) { }
 
   // ==================== HELPER METHODS ====================
@@ -247,5 +261,77 @@ export class AdminService {
         } : null,
       };
     });
+  }
+
+  // ==================== LOGIN LOGS ====================
+
+  /**
+   * Get login logs for a specific user
+   */
+  async getUserLoginLogs(userId: string, limit: number = 10): Promise<UserLoginLogDocument[]> {
+    return this.userLoginLogModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ loginAt: -1 })
+      .limit(limit)
+      .exec();
+  }
+
+  /**
+   * Get login logs for a specific admin
+   */
+  async getAdminLoginLogs(userId: string, limit: number = 10): Promise<AdminLoginLogDocument[]> {
+    return this.adminLoginLogModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ loginAt: -1 })
+      .limit(limit)
+      .exec();
+  }
+
+  /**
+   * Get login logs for a specific superadmin
+   */
+  async getSuperadminLoginLogs(userId: string, limit: number = 10): Promise<SuperadminLoginLogDocument[]> {
+    return this.superadminLoginLogModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ loginAt: -1 })
+      .limit(limit)
+      .exec();
+  }
+
+  /**
+   * Get all user login logs (for admin dashboard)
+   */
+  async getAllUserLoginLogs(limit: number = 50): Promise<UserLoginLogDocument[]> {
+    return this.userLoginLogModel
+      .find()
+      .sort({ loginAt: -1 })
+      .limit(limit)
+      .exec();
+  }
+
+  /**
+   * Get all admin login logs (for superadmin dashboard)
+   */
+  async getAllAdminLoginLogs(limit: number = 50): Promise<AdminLoginLogDocument[]> {
+    return this.adminLoginLogModel
+      .find()
+      .sort({ loginAt: -1 })
+      .limit(limit)
+      .exec();
+  }
+
+  /**
+   * Get QR code by device code (for registered device lookup)
+   */
+  async getQrCodeByDeviceCode(deviceCode: string): Promise<any> {
+    const qrCode = await this.qrCodeModel.findOne({ deviceCode }).exec();
+    if (!qrCode) {
+      return null;
+    }
+    return {
+      id: qrCode._id,
+      deviceCode: qrCode.deviceCode,
+      qrImageUrl: `/qrcodes/image/${qrCode.deviceCode}`,
+    };
   }
 }

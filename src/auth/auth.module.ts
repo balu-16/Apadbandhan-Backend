@@ -10,11 +10,24 @@ import { OtpService } from './services/otp.service';
 import { RolesGuard } from './guards/roles.guard';
 import { UsersModule } from '../users/users.module';
 import { Otp, OtpSchema } from './schemas/otp.schema';
+import {
+  UserLoginLog,
+  UserLoginLogSchema,
+  AdminLoginLog,
+  AdminLoginLogSchema,
+  SuperadminLoginLog,
+  SuperadminLoginLogSchema,
+} from './schemas/login-log.schema';
 
 @Module({
   imports: [
     UsersModule,
-    MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
+    MongooseModule.forFeature([
+      { name: Otp.name, schema: OtpSchema },
+      { name: UserLoginLog.name, schema: UserLoginLogSchema },
+      { name: AdminLoginLog.name, schema: AdminLoginLogSchema },
+      { name: SuperadminLoginLog.name, schema: SuperadminLoginLogSchema },
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -85,12 +85,7 @@ export class DeviceLocationsService {
     deviceId: string,
     query?: LocationQueryDto,
   ): Promise<DeviceLocationDocument[]> {
-    console.log('[DeviceLocations] findByDevice called with deviceId:', deviceId);
-    
-    const objectId = new Types.ObjectId(deviceId);
-    console.log('[DeviceLocations] Converted to ObjectId:', objectId.toString());
-    
-    const filter: any = { deviceId: objectId };
+    const filter: any = { deviceId: new Types.ObjectId(deviceId) };
 
     if (query?.startDate || query?.endDate) {
       filter.recordedAt = {};
@@ -106,19 +101,12 @@ export class DeviceLocationsService {
     const limit = query?.limit ? Number(query.limit) : 100;
     const skip = query?.skip ? Number(query.skip) : 0;
 
-    console.log('[DeviceLocations] Query filter:', JSON.stringify(filter));
-    console.log('[DeviceLocations] Limit:', limit, 'Skip:', skip);
-
-    const results = await this.locationModel
+    return this.locationModel
       .find(filter)
       .sort({ recordedAt: -1 })
       .skip(skip)
       .limit(limit)
       .exec();
-
-    console.log('[DeviceLocations] Found', results.length, 'locations');
-    
-    return results;
   }
 
   /**

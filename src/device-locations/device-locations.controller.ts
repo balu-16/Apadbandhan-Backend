@@ -114,30 +114,6 @@ export class DeviceLocationsController {
   }
 
   /**
-   * Debug endpoint - Get total count of all locations (no auth required)
-   */
-  @Get('debug/count')
-  @ApiOperation({ summary: 'Debug: Get total location count' })
-  async debugCount() {
-    const allLocations = await this.locationsService['locationModel'].find({}).exec();
-    const grouped: Record<string, number> = {};
-    allLocations.forEach((loc: any) => {
-      const key = loc.deviceId?.toString() || 'unknown';
-      grouped[key] = (grouped[key] || 0) + 1;
-    });
-    return {
-      total: allLocations.length,
-      byDevice: grouped,
-      sample: allLocations[0] ? {
-        deviceId: allLocations[0].deviceId?.toString(),
-        city: allLocations[0].city,
-        lat: allLocations[0].latitude,
-        lng: allLocations[0].longitude,
-      } : null,
-    };
-  }
-
-  /**
    * Get all locations for a device
    */
   @Get('device/:deviceId')
@@ -152,9 +128,6 @@ export class DeviceLocationsController {
     @Param('deviceId') deviceId: string,
     @Query() query: LocationQueryDto,
   ) {
-    console.log('[DeviceLocationsController] GET /device/:deviceId called');
-    console.log('[DeviceLocationsController] deviceId:', deviceId);
-    console.log('[DeviceLocationsController] query:', query);
     return this.locationsService.findByDevice(deviceId, query);
   }
 

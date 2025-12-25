@@ -54,11 +54,14 @@ async function bootstrap() {
     return expressApp;
 }
 
-export default async function handler(req: Request, res: Response) {
+const handler = async (req: Request, res: Response) => {
     if (!server) {
         server = await bootstrap();
     }
 
     return server(req, res);
-}
+};
+
+export { handler };
+export default handler;
 

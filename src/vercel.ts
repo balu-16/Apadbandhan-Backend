@@ -34,7 +34,10 @@ async function bootstrap() {
         }),
     );
 
-    app.setGlobalPrefix('api');
+    // On Vercel, the function already lives under "/api", so avoid double prefixing.
+    const globalPrefix = process.env.GLOBAL_PREFIX ?? (process.env.VERCEL ? '' : 'api');
+    const swaggerPath = globalPrefix ? `${globalPrefix}/docs` : 'docs';
+    app.setGlobalPrefix(globalPrefix);
 
     const config = new DocumentBuilder()
         .setTitle('Apadbandhav API')
@@ -48,7 +51,7 @@ async function bootstrap() {
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/docs', app, document);
+    SwaggerModule.setup(swaggerPath, app, document);
 
     await app.init();
     return expressApp;

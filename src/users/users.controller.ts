@@ -17,7 +17,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { profilePhotoMulterConfig } from '../../shared/multer.config';
+import { profilePhotoMulterConfig } from '../shared/multer.config';
 
 @ApiTags('users')
 @Controller('users')

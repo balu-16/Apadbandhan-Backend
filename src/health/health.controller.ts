@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-// import { MqttService } from '../../mqtt/mqtt.service'; // Temporarily disabled
+// import { MqttService } from '../mqtt/mqtt.service'; // Temporarily disabled
 
 /**
  * Health Check Controller

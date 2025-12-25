@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth, ApiResponse
 import { QrCodesService } from './qrcodes.service';
 import { CreateQrCodeDto, UploadQrImageDto, AssignQrCodeDto } from './dto/qrcode.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { qrCodeMulterConfig } from '../../shared/multer.config';
+import { qrCodeMulterConfig } from '../shared/multer.config';
 
 @ApiTags('qrcodes')
 @Controller('qrcodes')

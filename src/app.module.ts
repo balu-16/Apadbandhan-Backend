@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AppController } from './app.controller';
 import { DatabaseModule } from './database/database.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { DevicesModule } from './modules/devices/devices.module';
-import { AlertsModule } from './modules/alerts/alerts.module';
-import { QrCodesModule } from './modules/qrcodes/qrcodes.module';
-import { DeviceLocationsModule } from './modules/device-locations/device-locations.module';
-import { HealthModule } from './modules/health/health.module';
-import { AdminModule } from './modules/admin/admin.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { DevicesModule } from './devices/devices.module';
+import { AlertsModule } from './alerts/alerts.module';
+import { QrCodesModule } from './qrcodes/qrcodes.module';
+import { DeviceLocationsModule } from './device-locations/device-locations.module';
+import { HealthModule } from './health/health.module';
+import { AdminModule } from './admin/admin.module';
 /**
  * MQTT and Events modules are currently disabled.
  * To enable, uncomment the imports below and add to the imports array.
@@ -52,5 +53,6 @@ import { AdminModule } from './modules/admin/admin.module';
     // MqttModule,
     // EventsModule,
   ],
+  controllers: [AppController],
 })
 export class AppModule { }

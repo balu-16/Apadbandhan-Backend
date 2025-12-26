@@ -92,12 +92,15 @@ export class DatabaseInitService implements OnModuleInit {
 
     // Seed SuperAdmin (phone: 8888888888)
     const superAdminPhone = '8888888888';
-    const existingSuperAdmin = await usersCollection.findOne({ phone: superAdminPhone });
+    const superAdminEmail = 'superadmin@apadbandhav.com';
+    const existingSuperAdmin = await usersCollection.findOne({
+      $or: [{ phone: superAdminPhone }, { email: superAdminEmail }]
+    });
     
     if (!existingSuperAdmin) {
       await usersCollection.insertOne({
         fullName: 'Super Admin',
-        email: 'superadmin@apadbandhav.com',
+        email: superAdminEmail,
         phone: superAdminPhone,
         role: 'superadmin',
         isActive: true,
@@ -119,12 +122,15 @@ export class DatabaseInitService implements OnModuleInit {
 
     // Seed Admin (phone: 9999999999)
     const adminPhone = '9999999999';
-    const existingAdmin = await usersCollection.findOne({ phone: adminPhone });
+    const adminEmail = 'admin@apadbandhav.com';
+    const existingAdmin = await usersCollection.findOne({
+      $or: [{ phone: adminPhone }, { email: adminEmail }]
+    });
     
     if (!existingAdmin) {
       await usersCollection.insertOne({
         fullName: 'Admin User',
-        email: 'admin@apadbandhav.com',
+        email: adminEmail,
         phone: adminPhone,
         role: 'admin',
         isActive: true,

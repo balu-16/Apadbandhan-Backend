@@ -43,8 +43,7 @@ export class User {
   @Prop({ 
     required: true, 
     unique: true,
-    match: /^[6-9]\d{9}$/,
-    index: true
+    match: /^[6-9]\d{9}$/
   })
   phone: string;
 
@@ -88,6 +87,5 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Indexes for faster queries
-UserSchema.index({ email: 1 });
+// Indexes for faster queries (email and phone already have unique indexes from the schema)
 UserSchema.index({ createdAt: -1 });

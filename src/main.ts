@@ -22,7 +22,7 @@ async function createNestServer(): Promise<NestExpressApplication> {
   app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     expressAdapter,
-    { logger: ['error', 'warn', 'log'] }
+    { logger: ['error', 'warn'] } // Reduced logging - only errors and warnings
   );
 
   // Disable ETag to prevent 304 Not Modified on dynamic API responses
@@ -89,9 +89,9 @@ async function createNestServer(): Promise<NestExpressApplication> {
     }),
   );
 
-  // HTTP request logging (skip in serverless to reduce noise)
+  // HTTP request logging - minimal format (method, url, status, response time)
   if (process.env.NODE_ENV !== 'production') {
-    app.use(morgan('dev'));
+    app.use(morgan(':method :url :status :response-time ms'));
   }
 
   // Global prefix

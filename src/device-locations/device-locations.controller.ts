@@ -114,6 +114,18 @@ export class DeviceLocationsController {
   }
 
   /**
+   * Record a new location from browser (JWT protected)
+   * This endpoint is for web app users to update their device locations
+   */
+  @Post('browser')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Record a new device location from browser (requires JWT)' })
+  createFromBrowser(@Body() createLocationDto: CreateDeviceLocationDto) {
+    return this.locationsService.create(createLocationDto);
+  }
+
+  /**
    * Get all locations for a device
    */
   @Get('device/:deviceId')

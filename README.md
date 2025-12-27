@@ -59,7 +59,7 @@ npm run start:prod
 
 ## API Documentation
 
-Once running, visit: `http://localhost:3000/api/docs`
+Once running, visit: `https://apadbandhan-backend.vercel.app/api/docs`
 
 ## API Endpoints
 

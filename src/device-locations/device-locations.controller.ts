@@ -121,7 +121,8 @@ export class DeviceLocationsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Record a new device location from browser (requires JWT)' })
-  createFromBrowser(@Body() createLocationDto: CreateDeviceLocationDto) {
+  async createFromBrowser(@Body() createLocationDto: CreateDeviceLocationDto) {
+    console.log('[Browser Location] Received:', JSON.stringify(createLocationDto));
     return this.locationsService.create(createLocationDto);
   }
 

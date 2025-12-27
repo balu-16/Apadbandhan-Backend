@@ -62,7 +62,7 @@ export class DeviceLocation {
 
   @Prop({ 
     type: String, 
-    enum: ['gps', 'network', 'manual', 'sensor'],
+    enum: ['gps', 'network', 'manual', 'sensor', 'browser'],
     default: 'gps'
   })
   source: string;

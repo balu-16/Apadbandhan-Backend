@@ -59,7 +59,7 @@ npm run start:prod
 
 ## API Documentation
 
-Once running, visit: `https://localhost:3000/api/docs`
+Once running, visit: `http://localhost:3000/api/docs`
 
 ## API Endpoints
 

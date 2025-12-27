@@ -52,6 +52,17 @@ export class DeviceLocationsService {
    * Record a new location for a device
    */
   async create(createLocationDto: CreateDeviceLocationDto): Promise<DeviceLocationDocument> {
+    // Validate deviceId is a valid ObjectId
+    if (!Types.ObjectId.isValid(createLocationDto.deviceId)) {
+      throw new BadRequestException(`Invalid device ID format: ${createLocationDto.deviceId}`);
+    }
+
+    // Verify device exists
+    const device = await this.deviceModel.findById(createLocationDto.deviceId).exec();
+    if (!device) {
+      throw new NotFoundException(`Device with ID ${createLocationDto.deviceId} not found`);
+    }
+
     const locationData = {
       ...createLocationDto,
       deviceId: new Types.ObjectId(createLocationDto.deviceId),

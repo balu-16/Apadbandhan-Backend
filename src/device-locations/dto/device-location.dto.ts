@@ -6,6 +6,7 @@ export enum LocationSource {
   NETWORK = 'network',
   MANUAL = 'manual',
   SENSOR = 'sensor',
+  BROWSER = 'browser',
 }
 
 export class CreateDeviceLocationDto {
